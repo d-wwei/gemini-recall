@@ -5,9 +5,9 @@
 > **Looking for other CLI assistants?** 
 > Check out the sister extensions: [Claude Code Companion Starter](https://github.com/d-wwei/claude-code-companion-starter) & [Codex Companion Starter](https://github.com/d-wwei/Codex-companion-starter)
 
-Turn Gemini CLI into a more consistent, workspace-aware, long-term personal assistant.
+Turn Gemini CLI into a more consistent, workspace-aware, long-term personal assistant deployment pack.
 
-A single prompt starter for people who want Gemini CLI to do more than answer one-off questions. It helps Gemini establish a lightweight external memory layer in the file system, so collaboration can stay stable across sessions.
+A deployment-ready package for people who want Gemini CLI to do more than answer one-off questions. It helps Gemini establish a lightweight external memory layer in the file system, so collaboration can stay stable across sessions.
 
 ## Why This Exists
 
@@ -80,16 +80,42 @@ The result is not "turning Gemini into OpenClaw". The result is giving Gemini CL
 
 ## What's Included
 
-- [SKILL.md](./SKILL.md)  
+- [BOOTSTRAP_PROMPT.md](./BOOTSTRAP_PROMPT.md)  
   The main bootstrap prompt for Gemini CLI.
+
+- [scripts/show-bootstrap.sh](./scripts/show-bootstrap.sh)  
+  Prints the bootstrap prompt locally.
 
 - [README.zh-CN.md](./README.zh-CN.md)  
   Chinese documentation.
 
+## Deploy
+
+1. Clone or download this repository.
+2. Open `BOOTSTRAP_PROMPT.md`, or print it with:
+
+```bash
+./scripts/show-bootstrap.sh
+```
+
+3. Start Gemini CLI in the target workspace.
+4. Paste the prompt into Gemini CLI in one message.
+5. Let Gemini inspect the workspace, initialize memory, and begin lightweight bootstrap.
+
+## Package Layout
+
+```text
+BOOTSTRAP_PROMPT.md
+scripts/
+  show-bootstrap.sh
+```
+
+This repository is now organized as a lightweight Gemini deployment pack rather than only a nested prompt file.
+
 ## Quick Start
 
-1. Open [SKILL.md](./SKILL.md).
-2. Copy the full `text` code block.
+1. Open [BOOTSTRAP_PROMPT.md](./BOOTSTRAP_PROMPT.md).
+2. Copy the full prompt.
 3. Start Gemini CLI in your target workspace.
 4. Send the prompt in one message.
 5. Let Gemini inspect the workspace, update config, and start lightweight bootstrap if needed.
