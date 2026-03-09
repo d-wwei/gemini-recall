@@ -31,6 +31,9 @@ This prompt transforms Gemini CLI from a powerful but amnesic one-shot tool into
 - **Global Memory Promotion:** As it discovers your habits and reusable knowledge during active projects, it can automatically promote them to your global profile.
 - **Project-Specific Customization:** Every project can have its own tailored rules and context that override the global defaults.
 - **Continuous Collaboration:** You never have to explain your background, structure, or current progress from scratch again when re-entering a workspace.
+- **Layered Bootstrap Interview:** The startup interview now uses a compact 3-step script to capture naming, style, assistant role, ambiguity handling, work types, and memory boundaries without becoming a questionnaire.
+- **Global Quick Mode:** When started from `$HOME`, Gemini writes directly to `~/.gemini/GEMINI.md` and skips redundant "sync to global" prompts.
+- **Historical Project Scan:** First-time setup can scan prior `.assistant/` workspaces, extract project/session summaries, and register them into the global project index.
 
 ## Why OpenClaw-Inspired Memory For Gemini CLI
 
@@ -90,6 +93,14 @@ The result is not "turning Gemini into OpenClaw". The result is giving Gemini CL
 3. Start Gemini CLI in your target workspace.
 4. Send the prompt in one message.
 5. Let Gemini inspect the workspace, update config, and start lightweight bootstrap if needed.
+
+## Recent Improvements
+
+- richer first-round interview for long-term collaboration
+- bootstrap trigger now prefers `BOOTSTRAP.md` plus core-file completeness instead of a single-file heuristic
+- explicit global quick mode with no duplicate global-sync prompt
+- fuller historical project and session scan flow
+- clearer incremental-update behavior for existing `GEMINI.md`
 
 ## How This Prompt Is Positioned
 
