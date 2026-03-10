@@ -31,6 +31,7 @@ This prompt transforms Gemini CLI from a powerful but amnesic one-shot tool into
 - **Global Memory Promotion:** As it discovers your habits and reusable knowledge during active projects, it can automatically promote them to your global profile.
 - **Project-Specific Customization:** Every project can have its own tailored rules and context that override the global defaults.
 - **Continuous Collaboration:** You never have to explain your background, structure, or current progress from scratch again when re-entering a workspace.
+- **Task-Level Resume Checkpoints:** For multi-step implementation work, Gemini can maintain a module-local `PROGRESS.md` so a new process can resume from the last accepted step instead of reconstructing progress from chat.
 - **Layered Bootstrap Interview:** The startup interview now uses a compact 3-step script to capture naming, style, assistant role, ambiguity handling, work types, and memory boundaries without becoming a questionnaire.
 - **Global Quick Mode:** When started from `$HOME`, Gemini writes directly to `~/.gemini/GEMINI.md` and skips redundant "sync to global" prompts.
 - **Historical Project Scan:** First-time setup can scan prior `.assistant/` workspaces, extract project/session summaries, and register them into the global project index.
@@ -69,6 +70,54 @@ The result is not "turning Gemini into OpenClaw". The result is giving Gemini CL
 
 4. Workflow becomes personalized.  
    If you prefer "inspect first, edit second, summarize verification at the end", that can live in `.assistant/WORKFLOW.md`.
+
+5. Interrupted implementation can resume cleanly.  
+   A nearby `PROGRESS.md` can record which acceptance items are done, what is currently in progress, and what the next concrete step should be for the next Gemini process.
+
+The recommended `PROGRESS.md` shape is:
+
+```md
+status: in_progress
+task: Add task-level progress recovery
+module_path: packages/assistant-memory/
+
+# 开发进度
+
+## 已完成
+- [x] 明确 `PROGRESS.md` 使用模块局部文件而不是 `.assistant/`
+- [x] 加入恢复口令：继续上次进度 / 恢复进度
+- [x] 定义恢复时的候选定位顺序
+
+## 进行中
+- [ ] 把恢复逻辑接入当前模块的初始化流程
+
+## 待做
+- [ ] 补充恢复话术模板
+- [ ] 增加多候选 `PROGRESS.md` 的确认逻辑
+- [ ] 完成一次中断恢复流程验证
+
+## 关键决策
+- `PROGRESS.md` 放在实际模块目录，避免所有任务共用一份中心状态文件
+- 恢复时只读取最相关的 1-2 个候选，减少 token 消耗
+
+## 已知问题
+- 当前模块还没有验证“多个候选进度文件”时的选择行为
+```
+
+Update it every time an acceptance item is completed. For explicit recovery, the user can say `继续上次进度`, `恢复进度`, `resume progress`, or `continue from progress`.
+
+When recovering, the assistant should locate the most relevant `PROGRESS.md` in this order: current working directory, most recently modified module, user-named module, then best keyword-matching module. It should read only the top 1-2 candidates instead of scanning every progress file in the repo.
+
+The recommended resume wording is:
+
+```text
+我找到了这份进度记录：
+- 已完成：...
+- 进行中：...
+- 下一步：...
+
+要我按这份进度继续吗？
+```
 
 ## Core Ideas
 
@@ -127,6 +176,7 @@ This repository is now organized as a lightweight Gemini deployment pack rather 
 - explicit global quick mode with no duplicate global-sync prompt
 - fuller historical project and session scan flow
 - clearer incremental-update behavior for existing `GEMINI.md`
+- task-level `PROGRESS.md` checkpoints for interrupted implementation work
 
 ## How This Prompt Is Positioned
 

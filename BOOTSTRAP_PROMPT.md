@@ -82,7 +82,8 @@ Do NOT read all memory files on every turn.
 For each new session or task in a workspace:
 1. **Always read initially**: This file (`~/.gemini/GEMINI.md`), `.assistant/SYSTEM.md`, and `.assistant/runtime/inbox.md`.
 2. **Global Index reference**: Check the `<GLOBAL_PROJECTS_INDEX>` section at the end of this file for cross-project context if asked about past projects.
-3. **Contextual loading**: Read other files (e.g., `USER.md`, `STYLE.md`, `WORKFLOW.md`, `memory/projects/*.md`) ONLY when the task requires specific context, preferences, or project history.
+3. **Interrupted task recovery**: If the task looks like ongoing implementation work, read the nearest relevant module-local `PROGRESS.md` before broader project scans.
+4. **Contextual loading**: Read other files (e.g., `USER.md`, `STYLE.md`, `WORKFLOW.md`, `memory/projects/*.md`) ONLY when the task requires specific context, preferences, or project history.
 
 ### Inheritance model & Merging Strategy
 - The `<GLOBAL_USER_PROFILE>`, `<GLOBAL_STYLE>`, and `<GLOBAL_WORKFLOW>` sections in this file (`GEMINI.md`) are the **baseline identity** — they define who the user is across all projects.
@@ -100,7 +101,7 @@ For each new session or task in a workspace:
 - When the user updates identity info during any project bootstrap, ask whether to also update the global profile in `GEMINI.md`.
 
 ### Quick review
-When the user says "查看我的配置", "回顾当前规则", "review my setup", or similar, output a concise summary of: USER.md identity, STYLE.md preferences, MEMORY.md entry count, inbox.md pending count, BOOTSTRAP.md status, and last-session.md summary.
+When the user says "查看我的配置", "回顾当前规则", "review my setup", or similar, output a concise summary of: USER.md identity, STYLE.md preferences, MEMORY.md entry count, inbox.md pending count, BOOTSTRAP.md status, active `PROGRESS.md` if any, and last-session.md summary.
 
 ---
 
@@ -205,11 +206,75 @@ passwords, secrets, API keys, tokens, ID numbers, bank info, private health info
 - **MEMORY.md**: stable long-term preferences, collaboration rules, high-value reusable facts
 - **memory/projects/*.md**: project goals, constraints, decisions, cross-session context, next steps
 - **memory/daily/YYYY-MM-DD.md**: today's context, temporary notes, unconfirmed facts, one-off fragments
+- **module-local `PROGRESS.md`**: task-level implementation checkpoint for resumable work inside the active module directory
 - **runtime/inbox.md**: follow-ups, reminders, pending confirmations, short action items
 - **runtime/last-session.md**: last session summary, blockers, recommended next step
 
 ### Session summary write timing (Trigger Commands)
 ONLY update `.assistant/runtime/last-session.md` and archive daily context when the user explicitly inputs a trigger command like `"/done"`, `"总结会话"`, `"结束"`, or `"归档"`. Do NOT auto-update memory on every conversational turn.
+
+### Task progress checkpoint rules
+- For any implementation task that spans multiple acceptance items, files, or verification steps, create or update a nearby `PROGRESS.md`.
+- Place `PROGRESS.md` in the actual module or task directory being edited, not in `~/.gemini/` and not as a substitute for `.assistant/runtime/last-session.md`.
+- Use this default structure:
+
+  ```md
+  status: in_progress
+  task: Add task-level progress recovery
+  module_path: packages/assistant-memory/
+
+  # 开发进度
+
+  ## 已完成
+  - [x] 明确 `PROGRESS.md` 使用模块局部文件而不是 `.assistant/`
+  - [x] 加入恢复口令：继续上次进度 / 恢复进度
+  - [x] 定义恢复时的候选定位顺序
+
+  ## 进行中
+  - [ ] 把恢复逻辑接入当前模块的初始化流程
+
+  ## 待做
+  - [ ] 补充恢复话术模板
+  - [ ] 增加多候选 `PROGRESS.md` 的确认逻辑
+  - [ ] 完成一次中断恢复流程验证
+
+  ## 关键决策
+  - `PROGRESS.md` 放在实际模块目录，避免所有任务共用一份中心状态文件
+  - 恢复时只读取最相关的 1-2 个候选，减少 token 消耗
+
+  ## 已知问题
+  - 当前模块还没有验证“多个候选进度文件”时的选择行为
+  ```
+
+- Optionally add a very small header for `status`, task name, or module path.
+- Update it only when:
+  - an acceptance item is completed
+  - the active step changes
+  - a blocker appears
+  - the process is about to hand off or stop unexpectedly
+- Do not turn `PROGRESS.md` into a diary, chat log, or duplicate of Git diff output.
+- When resuming and a relevant `PROGRESS.md` exists with unfinished work, summarize: done / current step / next step, then ask the user whether to continue from that checkpoint.
+- When the task is finished, mark `status: completed`. Optionally keep the final checklist for audit, but avoid reopening completed work by default.
+- Support explicit recovery commands such as "继续上次进度", "恢复进度", "resume progress", or "continue from progress".
+- Locate the relevant `PROGRESS.md` in this order:
+  - current working directory or actively edited module
+  - most recently modified module
+  - user-named module or feature scope
+  - best keyword-matching module
+- If multiple candidates remain, read only the top 1-2 and briefly ask the user which module to continue. Do not scan every `PROGRESS.md` in the repository.
+- Use this standard resume wording:
+
+  ```text
+  我找到了这份进度记录：
+  - 已完成：...
+  - 进行中：...
+  - 下一步：...
+
+  要我按这份进度继续吗？
+  ```
+
+- If there is a blocker, switch `进行中` to `当前卡点`.
+- If there are multiple candidates, summarize each in one line and ask which one to continue.
 
 ### Global index update timing
 - When a new `.assistant/` is initialized → add a project entry to `<GLOBAL_PROJECTS_INDEX>` in `~/.gemini/GEMINI.md`.
@@ -302,6 +367,8 @@ Standard workspace structure:
     inbox.md       — short-lived action items
     last-session.md — last session summary
 
+Outside `.assistant/`, create a local `PROGRESS.md` inside the active module directory whenever implementation work is multi-step and likely to need interruption-safe recovery.
+
 ### Inheritance rules
 - Project files override global sections in `GEMINI.md` only when they have substantive content.
 - Missing or placeholder-only project files → fall back to global.
@@ -311,6 +378,7 @@ Standard workspace structure:
 - Missing `.assistant/` → create it.
 - Core files empty → bootstrap and fill.
 - Already active → load required files contextually.
+- If an active implementation task already has a nearby `PROGRESS.md`, read and reuse it before starting new work.
 
 ### Git safety
 - If current dir is a Git repo, ensure `.assistant/` is in `.gitignore`.
@@ -342,6 +410,11 @@ Standard workspace structure:
 - 三个模板文件：各写一个简洁的默认结构即可
 - runtime 文件：各写一个最小模板
 - 创建今天的 daily 文件：memory/daily/YYYY-MM-DD.md
+- 多步实现任务：在相关模块目录维护简短 `PROGRESS.md`，用于断点恢复，不要写成长日志
+- `PROGRESS.md` 使用固定结构：`已完成 / 进行中 / 待做 / 关键决策 / 已知问题`
+- 每完成一个验收标准项就更新一次 `PROGRESS.md`
+- 恢复时按以下顺序定位 `PROGRESS.md`：当前工作目录 / 当前编辑模块 > 最近修改模块 > 用户点名模块 > 与任务关键词最匹配的模块
+- 若候选超过一个，只读取最相关的 1-2 个，并简短确认继续哪个模块
 - 如果是 Git 仓库，处理 .gitignore
 - 更新全局索引：在 `~/.gemini/GEMINI.md` 的 `<GLOBAL_PROJECTS_INDEX>` 中添加当前项目条目（name、path、status=active、created=今天、description=待补全）
 
@@ -365,7 +438,7 @@ Standard workspace structure:
   2. 更新了哪些已有文件
   3. 当前项目是否已写入 `<GLOBAL_PROJECTS_INDEX>`
   4. 还有哪些信息待用户补充
-  5. 现在可以使用哪些快捷口令查看系统状态，例如“查看我的配置”“审查记忆”“列出我的项目”“归档项目”
+  5. 现在可以使用哪些快捷口令查看系统状态，例如“查看我的配置”“审查记忆”“列出我的项目”“归档项目”“继续上次进度”“恢复进度”
 
 执行边界：
 - 严禁打印文件内容代替写入操作。
